@@ -1,40 +1,43 @@
-import pytube
-import re
+import os
 import time
+from pytube import Playlist
 
-def download_video():
-    url = input("Enter the video link: ")
-    yt = pytube.YouTube(url)
-    title = yt.title
-    title = re.sub(r'[^\w\s-]', '', title)
-    title = title.strip().replace(' ', '_')
-    name_of_video = f'{title}.mp4'
-    
-    # Select the highest quality video
-    video = yt.streams.get_highest_resolution()
-    
-    # Prompt the user to enter the output folder
-    output_folder = input("Enter the output folder: ")
-    
-    # Set the output directory and file name
-    try:
-        video.download(output_path=output_folder, filename=name_of_video)
-        print(f'Video downloaded to {output_folder}')
-    except Exception as e:
-        print(f'An error occurred while downloading the video: {e}')
+def downloadPlaylist():
+    # Prompt the user for the playlist URL
+    playlist_url = input('Enter the YouTube playlist URL: ')
 
-download_video()
+    # Prompt the user for the destination folder
+    destination_folder = input('Enter the destination folder for the downloaded videos: ')
 
-flag=0
+    # Create the destination folder if it doesn't exist
+    if not os.path.exists(destination_folder):
+        os.makedirs(destination_folder)
 
-while(flag==0):
-    tempFlag=(str)(input('Deseja fazer download de outro video?(S/N): '))
-    
-    if(tempFlag=='S'):
-        download_video()
-        flag=0
-    if(tempFlag=='N'):
-        flag=1
-        print('Obrigado por usar o programa! A encerrar...')
-        
-time.sleep(3)
+    # Create a Playlist object using the URL
+    playlist = Playlist(playlist_url)
+
+    # Print the number of videos in the playlist
+    print('Number Of Videos In playlist: %s' % len(playlist.video_urls))
+
+    # Iterate through the videos in the playlist
+    for video in playlist.videos:
+        # Select the highest resolution stream
+        highest_resolution_stream = video.streams.filter(progressive=True).order_by('resolution').last()
+
+        # Download the highest resolution stream
+        highest_resolution_stream.download(destination_folder)
+
+downloadPlaylist()
+
+flag = 0
+while flag == 0:
+    option = input("Do you want to use the program again?(Y/N): ")
+    if option == "Y" or option=="y":
+        downloadPlaylist()
+        flag = 0
+    elif option == "N" or option=="n":
+        print("Thank you for using this program!")
+        flag = 1
+        time.sleep(2)
+    else:
+        flag = 0
