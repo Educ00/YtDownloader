@@ -1,6 +1,7 @@
 import os
 import time
 import concurrent.futures
+from tqdm import tqdm
 from pytube import Playlist
 
 def download_video(video, destination_folder):
@@ -25,7 +26,8 @@ def download_playlist(playlist_url, destination_folder):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(download_video, video, destination_folder) for video in playlist.videos]
 
-        for future in concurrent.futures.as_completed(futures):
+        # Use tqdm to display a progress bar for the download process
+        for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
             # Print any errors that occurred during the download
             if future.exception() is not None:
                 print(future.exception())
