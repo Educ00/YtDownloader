@@ -1,14 +1,16 @@
 import os
 import time
+import concurrent.futures
 from pytube import Playlist
 
-def downloadPlaylist():
-    # Prompt the user for the playlist URL
-    playlist_url = input('Enter the YouTube playlist URL: ')
+def download_video(video, destination_folder):
+    # Select the highest resolution stream
+    highest_resolution_stream = video.streams.filter(progressive=True).order_by('resolution').last()
 
-    # Prompt the user for the destination folder
-    destination_folder = input('Enter the destination folder for the downloaded videos: ')
+    # Download the highest resolution stream
+    highest_resolution_stream.download(destination_folder)
 
+def download_playlist(playlist_url, destination_folder):
     # Create the destination folder if it doesn't exist
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
@@ -17,23 +19,33 @@ def downloadPlaylist():
     playlist = Playlist(playlist_url)
 
     # Print the number of videos in the playlist
-    print('Number Of Videos In playlist: %s' % len(playlist.video_urls))
+    print('Number Of Videos In Playlist: %s' % len(playlist.video_urls))
 
-    # Iterate through the videos in the playlist
-    for video in playlist.videos:
-        # Select the highest resolution stream
-        highest_resolution_stream = video.streams.filter(progressive=True).order_by('resolution').last()
+    # Use a concurrent.futures.ThreadPoolExecutor to download the videos concurrently
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(download_video, video, destination_folder) for video in playlist.videos]
 
-        # Download the highest resolution stream
-        highest_resolution_stream.download(destination_folder)
+        for future in concurrent.futures.as_completed(futures):
+            # Print any errors that occurred during the download
+            if future.exception() is not None:
+                print(future.exception())
 
-downloadPlaylist()
+def run_download_playlist():
+    # Prompt the user for the playlist URL
+    playlist_url = input('Enter the YouTube playlist URL: ')
+
+    # Prompt the user for the destination folder
+    destination_folder = input('Enter the destination folder for the downloaded videos: ')
+
+    download_playlist(playlist_url, destination_folder)
+
+run_download_playlist()
 
 flag = 0
 while flag == 0:
     option = input("Do you want to use the program again?(Y/N): ")
     if option == "Y" or option=="y":
-        downloadPlaylist()
+        run_download_playlist()
         flag = 0
     elif option == "N" or option=="n":
         print("Thank you for using this program!")
